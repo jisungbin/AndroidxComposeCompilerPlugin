@@ -1,0 +1,15 @@
+**/.idea/*
+!/.idea/icon.png
+!/.idea/vcs.xml
+!/.idea/copyright
+!/.idea/codeStyleSettings.xml
+!/.idea/codeStyles
+!/.idea/dictionaries
+!/.idea/inspectionProfiles
+*.iml
+.gradle
+build
+release
+local.properties
+google-services.json
+keystore
