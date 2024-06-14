@@ -1,7 +1,19 @@
-rootProject.name = "AndroidxComposeCompilerPlugin"
+@file:Suppress("UnstableApiUsage")
 
-buildCache {
-    local {
-        removeUnusedEntriesAfterDays = 7
-    }
+rootProject.name = "KotlinCompilerPluginPlayground"
+
+pluginManagement {
+  repositories {
+    maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+    gradlePluginPortal()
+    mavenCentral()
+  }
 }
+
+dependencyResolutionManagement {
+  repositories {
+    maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+    mavenCentral()
+  }
+}
+

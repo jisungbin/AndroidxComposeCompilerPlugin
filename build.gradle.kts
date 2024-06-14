@@ -1,15 +1,18 @@
 plugins {
-  kotlin("jvm") version "1.9.10"
+  id("org.jetbrains.kotlin.jvm") version "2.0.20-dev-6176"
 }
 
-repositories {
-  mavenCentral()
-}
-
-sourceSets {
-  getByName("main").java.srcDir("src/main/kotlin")
+kotlin {
+  compilerOptions {
+    optIn.addAll(
+      "kotlin.RequiresOptIn",
+      "org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
+      "org.jetbrains.kotlin.utils.addToStdlib.UnsafeCastFunction",
+      "org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI",
+    )
+  }
 }
 
 dependencies {
-  implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.10")
+  implementation("org.jetbrains.kotlin:kotlin-compiler:2.0.20-dev-6176")
 }
