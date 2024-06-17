@@ -1,3 +1,3 @@
 ## AndroidxComposeCompilerPlugin
 
-Clone of https://github.com/JetBrains/kotlin/tree/master/plugins/compose/compiler-hosted/src/main.
+It is updated daily with the latest commits using [aosp-compose-autofetcher](https://github.com/jisungbin/aosp-compose-autofetcher).
