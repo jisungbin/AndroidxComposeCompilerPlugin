@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -131,7 +132,8 @@ class ComposableDeclarationChecker : DeclarationChecker, StorageComponentContain
     if (descriptor.isActual) {
       val expectDescriptor = descriptor.findCompatibleExpectsForActual().singleOrNull()
       if (expectDescriptor != null &&
-        expectDescriptor.hasComposableAnnotation() != hasComposableAnnotation) {
+        expectDescriptor.hasComposableAnnotation() != hasComposableAnnotation
+      ) {
         context.trace.report(
           ComposeErrors.MISMATCHED_COMPOSABLE_IN_EXPECT_ACTUAL.on(
             declaration.nameIdentifier ?: declaration
@@ -140,6 +142,18 @@ class ComposableDeclarationChecker : DeclarationChecker, StorageComponentContain
       }
     }
 
+    if (
+      hasComposableAnnotation && descriptor.modality == Modality.OPEN
+    ) {
+      declaration.valueParameters.forEach {
+        val defaultValue = it.defaultValue
+        if (defaultValue != null) {
+          context.trace.report(
+            ComposeErrors.ABSTRACT_COMPOSABLE_DEFAULT_PARAMETER_VALUE.on(defaultValue)
+          )
+        }
+      }
+    }
     val params = descriptor.valueParameters
     val ktparams = declaration.valueParameters
     if (params.size == ktparams.size) {

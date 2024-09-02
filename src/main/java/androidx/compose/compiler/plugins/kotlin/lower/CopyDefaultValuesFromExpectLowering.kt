@@ -25,30 +25,10 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.descriptors.MemberDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrEnumEntry
-import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.IrExpressionBody
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrEnumEntrySymbol
-import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
-import org.jetbrains.kotlin.ir.symbols.IrScriptSymbol
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
-import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
-import org.jetbrains.kotlin.ir.symbols.IrValueParameterSymbol
-import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
-import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
-import org.jetbrains.kotlin.ir.util.DeepCopyIrTreeWithSymbols
-import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
-import org.jetbrains.kotlin.ir.util.DeepCopyTypeRemapper
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.referenceFunction
+import org.jetbrains.kotlin.ir.symbols.*
+import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -208,17 +188,14 @@ class CopyDefaultValuesFromExpectLowering(
     val symbolRemapper = SymbolRemapper()
     acceptVoid(symbolRemapper)
 
-    return transform(
-      transformer = DeepCopyIrTreeWithSymbols(
-        symbolRemapper, DeepCopyTypeRemapper(symbolRemapper)
-      ),
-      data = null
-    )
+    return transform(DeepCopyIrTreeWithSymbols(symbolRemapper), null)
   }
 
   private fun remapExpectTypeParameter(symbol: IrTypeParameterSymbol): IrTypeParameter {
     val parameter = symbol.owner
-    return when (val parent = parameter.parent) {
+    val parent = parameter.parent
+
+    return when (parent) {
       is IrClass ->
         if (!parent.descriptor.isExpect)
           parameter
@@ -239,7 +216,9 @@ class CopyDefaultValuesFromExpectLowering(
     }
 
     val parameter = symbol.owner
-    return when (val parent = parameter.parent) {
+    val parent = parameter.parent
+
+    return when (parent) {
       is IrClass ->
         if (!parent.descriptor.isExpect)
           null

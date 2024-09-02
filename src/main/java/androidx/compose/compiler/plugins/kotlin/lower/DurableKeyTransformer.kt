@@ -304,7 +304,7 @@ open class DurableKeyTransformer(
       // expression, so we only touch the body
       IrStatementOrigin.WHILE_LOOP,
       IrStatementOrigin.FOR_LOOP_INNER_WHILE,
-      -> enter("loop") {
+        -> enter("loop") {
         loop.body = enter("body") { loop.body?.transform(this, null) }
         loop
       }
@@ -402,7 +402,7 @@ open class DurableKeyTransformer(
       // loops, so we avoid transforming the first statement in this case
       IrStatementOrigin.FOR_LOOP,
       IrStatementOrigin.FOR_LOOP_INNER_WHILE,
-      -> {
+        -> {
         expression.statements[1] =
           expression.statements[1].transform(this, null) as IrStatement
         expression

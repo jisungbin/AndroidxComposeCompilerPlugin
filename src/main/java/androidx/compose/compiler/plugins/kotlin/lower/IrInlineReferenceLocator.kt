@@ -76,7 +76,8 @@ class ComposeInlineLambdaLocator(private val context: IrPluginContext) {
         declaration.acceptChildrenVoid(this)
         val parent = declaration.parent as? IrFunction
         if (parent?.isInlineFunctionCall(context) == true &&
-          declaration.isInlinedFunction()) {
+          declaration.isInlinedFunction()
+        ) {
           declaration.defaultValue?.expression?.unwrapLambda()?.let {
             inlineLambdaToParameter[it] = declaration
           }

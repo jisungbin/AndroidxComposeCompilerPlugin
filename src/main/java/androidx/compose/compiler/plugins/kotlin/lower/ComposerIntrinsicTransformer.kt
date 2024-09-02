@@ -19,7 +19,6 @@
 package androidx.compose.compiler.plugins.kotlin.lower
 
 import androidx.compose.compiler.plugins.kotlin.ComposeFqNames
-import androidx.compose.compiler.plugins.kotlin.lower.decoys.DecoyFqNames
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrFile
@@ -35,7 +34,6 @@ import org.jetbrains.kotlin.name.FqName
 
 class ComposerIntrinsicTransformer(
   val context: IrPluginContext,
-  private val decoysEnabled: Boolean,
 ) :
   IrElementTransformerVoid(),
   FileLoweringPass,
@@ -45,11 +43,7 @@ class ComposerIntrinsicTransformer(
 
   // get-currentComposer gets transformed as decoy, as the getter now has additional params
   private fun currentComposerFqName(): FqName =
-    if (decoysEnabled) {
-      DecoyFqNames.CurrentComposerIntrinsic
-    } else {
-      ComposeFqNames.CurrentComposerIntrinsic
-    }
+    ComposeFqNames.CurrentComposerIntrinsic
 
   override fun lower(module: IrModuleFragment) {
     module.transformChildrenVoid(this)

@@ -91,7 +91,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrElseBranchImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetObjectValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrStringConcatenationImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.expressions.impl.copyWithOffsets
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
@@ -99,17 +98,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
-import org.jetbrains.kotlin.ir.util.SYNTHETIC_OFFSET
-import org.jetbrains.kotlin.ir.util.addChild
-import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.copyTo
-import org.jetbrains.kotlin.ir.util.createParameterDeclarations
-import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.getPropertyGetter
-import org.jetbrains.kotlin.ir.util.isAnnotationClass
-import org.jetbrains.kotlin.ir.util.parentAsClass
-import org.jetbrains.kotlin.ir.util.primaryConstructor
+import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.kotlin.PackagePartClassUtils
 import org.jetbrains.kotlin.name.Name
@@ -220,13 +209,13 @@ open class LiveLiteralTransformer(
     key: String,
     offset: Int,
   ): IrConstructorCall = IrConstructorCallImpl(
-    startOffset = UNDEFINED_OFFSET,
-    endOffset = UNDEFINED_OFFSET,
-    type = liveLiteralInfoAnnotation.defaultType,
-    symbol = liveLiteralInfoAnnotation.constructors.single(),
-    typeArgumentsCount = 0,
-    constructorTypeArgumentsCount = 0,
-    valueArgumentsCount = 2,
+    UNDEFINED_OFFSET,
+    UNDEFINED_OFFSET,
+    liveLiteralInfoAnnotation.defaultType,
+    liveLiteralInfoAnnotation.constructors.single(),
+    0,
+    0,
+    2
   ).apply {
     putValueArgument(0, irConst(key))
     putValueArgument(1, irConst(offset))
@@ -235,13 +224,13 @@ open class LiveLiteralTransformer(
   private fun irLiveLiteralFileInfoAnnotation(
     file: String,
   ): IrConstructorCall = IrConstructorCallImpl(
-    startOffset = UNDEFINED_OFFSET,
-    endOffset = UNDEFINED_OFFSET,
-    type = liveLiteralFileInfoAnnotation.defaultType,
-    symbol = liveLiteralFileInfoAnnotation.constructors.single(),
-    typeArgumentsCount = 0,
-    constructorTypeArgumentsCount = 0,
-    valueArgumentsCount = 1,
+    UNDEFINED_OFFSET,
+    UNDEFINED_OFFSET,
+    liveLiteralFileInfoAnnotation.defaultType,
+    liveLiteralFileInfoAnnotation.constructors.single(),
+    0,
+    0,
+    1
   ).apply {
     putValueArgument(0, irConst(file))
   }
@@ -403,7 +392,7 @@ open class LiveLiteralTransformer(
     }
   }
 
-  override fun visitConst(expression: IrConst<*>): IrExpression {
+  override fun visitConst(expression: IrConst): IrExpression {
     when (expression.kind) {
       IrConstKind.Null -> return expression
       else -> {
@@ -732,7 +721,7 @@ open class LiveLiteralTransformer(
       // expression, so we only touch the body
       IrStatementOrigin.WHILE_LOOP,
       IrStatementOrigin.FOR_LOOP_INNER_WHILE,
-      -> enter("loop") {
+        -> enter("loop") {
         loop.body = enter("body") { loop.body?.transform(this, null) }
         loop
       }
@@ -830,7 +819,7 @@ open class LiveLiteralTransformer(
       // loops, so we avoid transforming the first statement in this case
       IrStatementOrigin.FOR_LOOP,
       IrStatementOrigin.FOR_LOOP_INNER_WHILE,
-      -> {
+        -> {
         expression.statements[1] =
           expression.statements[1].transform(this, null) as IrStatement
         expression

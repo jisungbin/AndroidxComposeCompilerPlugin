@@ -18,6 +18,7 @@ package androidx.compose.compiler.plugins.kotlin
 
 import java.io.File
 import java.io.OutputStreamWriter
+import java.lang.Appendable
 
 /**
  * This class is a very rudimentary json serializer. It is not fully featured, and does not
@@ -29,6 +30,7 @@ import java.io.OutputStreamWriter
 class JsonBuilder(private val sb: Appendable, private val indent: Int = 0) {
   var hasEntry = false
 
+  private val spacesForIndent = 2
   private val nonWordCharRegex = Regex("\\W")
 
   private fun entryLiteral(key: String, value: String) {
@@ -36,7 +38,7 @@ class JsonBuilder(private val sb: Appendable, private val indent: Int = 0) {
       if (hasEntry) {
         appendLine(",")
       }
-      append(" ".repeat(indent))
+      append(" ".repeat(indent * spacesForIndent))
       append("\"${key.replace(nonWordCharRegex, "")}\"")
       append(": ")
       append(value)
@@ -44,6 +46,7 @@ class JsonBuilder(private val sb: Appendable, private val indent: Int = 0) {
     hasEntry = true
   }
 
+  fun entry(key: String, value: Boolean) = entryLiteral(key, "$value")
   fun entry(key: String, value: Int) = entryLiteral(key, "$value")
 
   fun entry(key: String, fn: JsonBuilder.() -> Unit) = entryLiteral(
@@ -56,6 +59,7 @@ class JsonBuilder(private val sb: Appendable, private val indent: Int = 0) {
       appendLine("{")
       fn()
       if (hasEntry) appendLine()
+      append(" ".repeat((indent - 1) * spacesForIndent)) // Close brace is one indent back
       append("}")
     }
   }

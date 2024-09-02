@@ -169,7 +169,7 @@ fun Stability.normalize(): Stability {
     is Stability.Parameter,
     is Stability.Runtime,
     is Stability.Unknown,
-    -> return this
+      -> return this
 
     is Stability.Combined -> {
       // if combined, we perform the more expensive normalization process
@@ -228,7 +228,7 @@ private fun IrClass.hasStableMarkedDescendant(): Boolean {
 
 private fun IrAnnotationContainer.stabilityParamBitmask(): Int? =
   (annotations.findAnnotation(ComposeFqNames.StabilityInferred)
-    ?.getValueArgument(0) as? IrConst<*>
+    ?.getValueArgument(0) as? IrConst
     )?.value as? Int
 
 private data class SymbolForAnalysis(
@@ -278,6 +278,10 @@ class StabilityInferencer(
         mask = externalTypeMatcherCollection
           .maskForName(declaration.fqNameWhenAvailable) ?: 0
         stability = Stability.Stable
+      } else if (declaration.isInterface && declaration.isInCurrentModule()) {
+        // trying to avoid extracting stability bitmask for interfaces in current module
+        // to support incremental compilation
+        return Stability.Unknown(declaration)
       } else {
         val bitmask = declaration.stabilityParamBitmask() ?: return Stability.Unstable
 
@@ -487,7 +491,7 @@ class StabilityInferencer(
     val stability = stabilityOf(expr.type)
     if (stability.knownStable()) return stability
     return when (expr) {
-      is IrConst<*> -> Stability.Stable
+      is IrConst -> Stability.Stable
       is IrCall -> stabilityOf(expr, stability)
       is IrGetValue -> {
         val owner = expr.symbol.owner

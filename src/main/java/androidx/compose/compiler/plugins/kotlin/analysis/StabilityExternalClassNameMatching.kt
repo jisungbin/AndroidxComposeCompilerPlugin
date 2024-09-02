@@ -226,8 +226,10 @@ class FqNameMatcher(val pattern: String) {
     private const val PATTERN_PACKAGE_SEGMENT = "\\."
 
     private val validPatternMatcher =
-      Regex("((\\w+\\*{0,2}|\\*{1,2})\\.)*" +
-        "((\\w+(<?(?<genericmask>([*|_],)*[*|_])>)+)|(\\w+\\*{0,2}|\\*{1,2}))")
+      Regex(
+        "((\\w+\\*{0,2}|\\*{1,2})\\.)*" +
+          "((\\w+(<?(?<genericmask>([*|_],)*[*|_])>)+)|(\\w+\\*{0,2}|\\*{1,2}))"
+      )
     private val singleWildcardSuffix = Regex(PATTERN_SINGLE_WILD)
     private val multiWildcardSuffix = Regex(PATTERN_MULTI_WILD)
   }

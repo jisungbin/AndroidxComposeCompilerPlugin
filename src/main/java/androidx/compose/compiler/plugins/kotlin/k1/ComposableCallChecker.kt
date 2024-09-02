@@ -250,7 +250,8 @@ open class ComposableCallChecker :
                 illegalComposableDelegate(context, reportOn)
               }
               if (descriptor is PropertyDescriptor &&
-                descriptor.getter?.hasComposableAnnotation() != true) {
+                descriptor.getter?.hasComposableAnnotation() != true
+              ) {
                 composableExpected(context, node.nameIdentifier ?: node)
               }
               return
@@ -574,9 +575,14 @@ fun CallableDescriptor.isComposableCallable(bindingContext: BindingContext): Boo
     return true
   }
   val lambdaExpr = functionLiteral.parent as? KtLambdaExpression
-  // this lambda was marked as inferred to be composable
-  return lambdaExpr != null &&
+  if (
+    lambdaExpr != null &&
     bindingContext[FrontendWritableSlices.INFERRED_COMPOSABLE_LITERAL, lambdaExpr] == true
+  ) {
+    // this lambda was marked as inferred to be composable
+    return true
+  }
+  return false
 }
 
 // the body of this function can have composable calls in it, even if it itself is not

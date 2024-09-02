@@ -296,7 +296,7 @@ class ComposableTargetAnnotationsTransformer(
         ) || when (expression.symbol.owner.fqNameWhenAvailable) {
         ComposeFqNames.getCurrentComposerFullName,
         ComposeFqNames.composableLambdaFullName,
-        -> true
+          -> true
         else -> false
       }
 
@@ -1068,7 +1068,7 @@ class InferenceResolvedParameter(
 
 private inline fun <reified T> IrConstructorCall.firstParameterOrNull() =
   if (valueArgumentsCount >= 1) {
-    (getValueArgument(0) as? IrConst<*>)?.value as? T
+    (getValueArgument(0) as? IrConst)?.value as? T
   } else null
 
 private val IrConstructorCall.isComposableTarget

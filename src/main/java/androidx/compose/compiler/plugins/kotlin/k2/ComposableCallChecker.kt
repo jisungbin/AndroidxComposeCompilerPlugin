@@ -262,7 +262,8 @@ private fun checkInvoke(
     ?.toResolvedValueParameterSymbol()
     ?: return
   if (param.resolvedReturnTypeRef.hasDisallowComposableCallsAnnotation(context.session) ||
-    !param.containingFunctionSymbol.isInline) {
+    !param.containingFunctionSymbol.isInline
+  ) {
     return
   }
 

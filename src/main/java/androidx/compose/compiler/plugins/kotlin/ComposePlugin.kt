@@ -19,35 +19,20 @@ package androidx.compose.compiler.plugins.kotlin
 import androidx.compose.compiler.plugins.kotlin.analysis.FqNameMatcher
 import androidx.compose.compiler.plugins.kotlin.analysis.StabilityConfigParser
 import androidx.compose.compiler.plugins.kotlin.analysis.StabilityInferencer
-import androidx.compose.compiler.plugins.kotlin.k1.ComposableCallChecker
-import androidx.compose.compiler.plugins.kotlin.k1.ComposableDeclarationChecker
-import androidx.compose.compiler.plugins.kotlin.k1.ComposableTargetChecker
-import androidx.compose.compiler.plugins.kotlin.k1.ComposeDescriptorSerializerContext
-import androidx.compose.compiler.plugins.kotlin.k1.ComposeDiagnosticSuppressor
-import androidx.compose.compiler.plugins.kotlin.k1.ComposeTypeResolutionInterceptorExtension
+import androidx.compose.compiler.plugins.kotlin.k1.*
 import androidx.compose.compiler.plugins.kotlin.k2.ComposeFirExtensionRegistrar
 import androidx.compose.compiler.plugins.kotlin.lower.ClassStabilityFieldSerializationPlugin
 import androidx.compose.compiler.plugins.kotlin.lower.hiddenfromobjc.AddHiddenFromObjCSerializationPlugin
-import com.intellij.mock.MockProject
-import com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
-import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
-import org.jetbrains.kotlin.compiler.plugin.CliOption
-import org.jetbrains.kotlin.compiler.plugin.CliOptionProcessingException
-import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
-import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
-import org.jetbrains.kotlin.config.CommonConfigurationKeys
-import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.CompilerConfigurationKey
-import org.jetbrains.kotlin.config.IrVerificationMode
-import org.jetbrains.kotlin.config.languageVersionSettings
-import org.jetbrains.kotlin.config.messageCollector
+import org.jetbrains.kotlin.compiler.plugin.*
+import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
 import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 import org.jetbrains.kotlin.serialization.DescriptorSerializerPlugin
+import java.io.FileNotFoundException
 
 object ComposeConfiguration {
   val LIVE_LITERALS_ENABLED_KEY =
@@ -383,7 +368,7 @@ class ComposeCommandLineProcessor : CommandLineProcessor {
  * @param default True if the feature is enabled by default or false if it is not.
  */
 enum class FeatureFlag(val featureName: String, val default: Boolean) {
-  StrongSkipping("StrongSkipping", default = false),
+  StrongSkipping("StrongSkipping", default = true),
   IntrinsicRemember("IntrinsicRemember", default = true),
   OptimizeNonSkippingGroups("OptimizeNonSkippingGroups", default = false);
 
@@ -541,27 +526,21 @@ fun validateFeatureFlag(
   }
 }
 
-@Suppress("DEPRECATION") // CompilerPluginRegistrar does not expose project (or disposable) causing
-// memory leaks, see: https://youtrack.jetbrains.com/issue/KT-60952
 @OptIn(ExperimentalCompilerApi::class)
-class ComposePluginRegistrar : org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar {
+class ComposePluginRegistrar : CompilerPluginRegistrar() {
   override val supportsK2: Boolean
     get() = true
 
-  override fun registerProjectComponents(
-    project: MockProject,
-    configuration: CompilerConfiguration,
-  ) {
-    if (checkCompilerVersion(configuration)) {
+  override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
+    if (checkCompilerConfiguration(configuration)) {
       val usesK2 = configuration.languageVersionSettings.languageVersion.usesK2
       val descriptorSerializerContext =
         if (usesK2) null
         else ComposeDescriptorSerializerContext()
 
-      registerCommonExtensions(project, descriptorSerializerContext)
+      registerCommonExtensions(descriptorSerializerContext)
 
       IrGenerationExtension.registerExtension(
-        project,
         createComposeIrExtension(
           configuration,
           descriptorSerializerContext
@@ -569,13 +548,13 @@ class ComposePluginRegistrar : org.jetbrains.kotlin.compiler.plugin.ComponentReg
       )
 
       if (!usesK2) {
-        registerNativeExtensions(project, descriptorSerializerContext!!)
+        registerNativeExtensions(descriptorSerializerContext!!)
       }
     }
   }
 
   companion object {
-    fun checkCompilerVersion(configuration: CompilerConfiguration): Boolean {
+    fun checkCompilerConfiguration(configuration: CompilerConfiguration): Boolean {
       val msgCollector = configuration.messageCollector
       val suppressKotlinVersionCheck = configuration.get(ComposeConfiguration.SUPPRESS_KOTLIN_VERSION_COMPATIBILITY_CHECK)
       if (suppressKotlinVersionCheck != null) {
@@ -590,50 +569,42 @@ class ComposePluginRegistrar : org.jetbrains.kotlin.compiler.plugin.ComponentReg
       if (decoysEnabled) {
         msgCollector.report(
           CompilerMessageSeverity.ERROR,
-          "Decoys generation should be disabled for Compose Multiplatform projects"
+          "Decoys generation is no longer supported by the Compose compiler."
         )
         return false
       }
       return true
     }
 
-    fun registerCommonExtensions(
-      project: Project,
+    fun ExtensionStorage.registerCommonExtensions(
       composeDescriptorSerializerContext: ComposeDescriptorSerializerContext? = null,
     ) {
       StorageComponentContainerContributor.registerExtension(
-        project,
         ComposableCallChecker()
       )
       StorageComponentContainerContributor.registerExtension(
-        project,
         ComposableDeclarationChecker()
       )
       StorageComponentContainerContributor.registerExtension(
-        project,
         ComposableTargetChecker()
       )
-      DiagnosticSuppressor.registerExtension(project, ComposeDiagnosticSuppressor())
+      DiagnosticSuppressor.registerExtension(ComposeDiagnosticSuppressor())
       @Suppress("OPT_IN_USAGE_ERROR")
       TypeResolutionInterceptor.registerExtension(
-        project,
         ComposeTypeResolutionInterceptorExtension()
       )
       DescriptorSerializerPlugin.registerExtension(
-        project,
         ClassStabilityFieldSerializationPlugin(
           composeDescriptorSerializerContext?.classStabilityInferredCollection
         )
       )
-      FirExtensionRegistrarAdapter.registerExtension(project, ComposeFirExtensionRegistrar())
+      FirExtensionRegistrarAdapter.registerExtension(ComposeFirExtensionRegistrar())
     }
 
-    fun registerNativeExtensions(
-      project: Project,
+    fun ExtensionStorage.registerNativeExtensions(
       composeDescriptorSerializerContext: ComposeDescriptorSerializerContext,
     ) {
       DescriptorSerializerPlugin.registerExtension(
-        project,
         AddHiddenFromObjCSerializationPlugin(
           composeDescriptorSerializerContext.hideFromObjCDeclarationsSet
         )
@@ -643,7 +614,7 @@ class ComposePluginRegistrar : org.jetbrains.kotlin.compiler.plugin.ComponentReg
     fun createComposeIrExtension(
       configuration: CompilerConfiguration,
       descriptorSerializerContext: ComposeDescriptorSerializerContext? = null,
-      moduleMetricsFactory: ((StabilityInferencer) -> ModuleMetrics)? = null,
+      moduleMetricsFactory: ((StabilityInferencer, FeatureFlags) -> ModuleMetrics)? = null,
     ): ComposeIrGenerationExtension {
       val liveLiteralsEnabled = configuration.getBoolean(
         ComposeConfiguration.LIVE_LITERALS_ENABLED_KEY,
@@ -664,9 +635,6 @@ class ComposePluginRegistrar : org.jetbrains.kotlin.compiler.plugin.ComponentReg
       val nonSkippingGroupOptimizationEnabled = configuration.get(
         ComposeConfiguration.NON_SKIPPING_GROUP_OPTIMIZATION_ENABLED_KEY,
         FeatureFlag.OptimizeNonSkippingGroups.default
-      )
-      val decoysEnabled = configuration.getBoolean(
-        ComposeConfiguration.DECOYS_ENABLED_KEY,
       )
       val metricsDestination = configuration.get(
         ComposeConfiguration.METRICS_DESTINATION_KEY,
@@ -718,6 +686,12 @@ class ComposePluginRegistrar : org.jetbrains.kotlin.compiler.plugin.ComponentReg
         val path = stabilityConfigPaths[i]
         val matchers = try {
           StabilityConfigParser.fromFile(path).stableTypeMatchers
+        } catch (e: FileNotFoundException) {
+          configuration.messageCollector.report(
+            CompilerMessageSeverity.WARNING,
+            "Stability configuration file not found at $path"
+          )
+          emptySet()
         } catch (e: Exception) {
           configuration.messageCollector.report(
             CompilerMessageSeverity.ERROR,
@@ -738,7 +712,6 @@ class ComposePluginRegistrar : org.jetbrains.kotlin.compiler.plugin.ComponentReg
         generateFunctionKeyMetaClasses = generateFunctionKeyMetaClasses,
         sourceInformationEnabled = sourceInformationEnabled,
         traceMarkersEnabled = traceMarkersEnabled,
-        decoysEnabled = decoysEnabled,
         metricsDestination = metricsDestination,
         reportsDestination = reportsDestination,
         irVerificationMode = irVerificationMode,

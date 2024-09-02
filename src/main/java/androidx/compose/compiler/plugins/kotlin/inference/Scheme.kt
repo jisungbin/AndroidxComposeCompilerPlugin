@@ -16,6 +16,8 @@
 
 package androidx.compose.compiler.plugins.kotlin.inference
 
+import java.lang.NumberFormatException
+
 /**
  * A part of a [Scheme].
  */
@@ -80,10 +82,10 @@ class Open(val index: Int, override val isUnspecified: Boolean = false) : Item()
  * `$composer` captured was passed in as a parameter just like it was a composable lambda.
  */
 class Scheme(
-  val target: Item,
-  val parameters: List<Scheme> = emptyList(),
-  val result: Scheme? = null,
-  val anyParameters: Boolean = false,
+    val target: Item,
+    val parameters: List<Scheme> = emptyList(),
+    val result: Scheme? = null,
+    val anyParameters: Boolean = false,
 ) {
   init {
     check(!anyParameters || parameters.isEmpty()) {
@@ -241,9 +243,9 @@ fun deserializeScheme(value: String): Scheme? {
   }
 
   fun <T> delimited(
-    prefix: ItemKind,
-    postfix: ItemKind,
-    content: () -> T,
+      prefix: ItemKind,
+      postfix: ItemKind,
+      content: () -> T,
   ) = run {
     reader.expect(prefix)
     content().also {
@@ -252,9 +254,9 @@ fun deserializeScheme(value: String): Scheme? {
   }
 
   fun <T> optional(
-    prefix: ItemKind,
-    postfix: ItemKind = ItemKind.Invalid,
-    content: () -> T,
+      prefix: ItemKind,
+      postfix: ItemKind = ItemKind.Invalid,
+      content: () -> T,
   ): T? =
     if (reader.kind == prefix) {
       delimited(prefix, postfix, content)

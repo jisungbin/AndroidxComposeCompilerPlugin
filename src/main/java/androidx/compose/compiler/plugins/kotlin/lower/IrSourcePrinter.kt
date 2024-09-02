@@ -92,7 +92,6 @@ import org.jetbrains.kotlin.ir.expressions.IrValueAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.IrWhen
 import org.jetbrains.kotlin.ir.expressions.IrWhileLoop
-import org.jetbrains.kotlin.ir.expressions.impl.IrIfThenElseImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrReturnTargetSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
@@ -320,7 +319,7 @@ class IrSourcePrinterVisitor(
               "equals",
               "EQEQ",
               "EQEQEQ",
-              -> {
+                -> {
                 val prevIsInNotCall = isInNotCall
                 isInNotCall = true
                 arg.print()
@@ -362,7 +361,7 @@ class IrSourcePrinterVisitor(
         "invoke", "get", "set" -> ""
         "iterator", "hasNext", "next", "getValue", "setValue",
         "noWhenBranchMatchedException",
-        -> name
+          -> name
         "CHECK_NOT_NULL" -> "!!"
         else -> {
           if (name.startsWith("component")) name
@@ -374,7 +373,7 @@ class IrSourcePrinterVisitor(
         "equals",
         "EQEQ",
         "EQEQEQ",
-        -> when {
+          -> when {
           expression.dispatchReceiver?.type?.isInt() == true -> true
           expression.extensionReceiver?.type?.isInt() == true -> true
           expression.valueArgumentsCount > 0 &&
@@ -431,14 +430,14 @@ class IrSourcePrinterVisitor(
         // builtin static operators
         "greater", "less", "lessOrEqual", "greaterOrEqual", "EQEQ", "EQEQEQ",
         "ieee754equals",
-        -> {
+          -> {
           expression.getValueArgument(0)?.print()
           print(" $opSymbol ")
           expression.getValueArgument(1)?.print()
         }
         "iterator", "hasNext", "next",
         "noWhenBranchMatchedException",
-        -> {
+          -> {
           (expression.dispatchReceiver ?: expression.extensionReceiver)?.print()
           print(".")
           print(opSymbol)
@@ -714,7 +713,7 @@ class IrSourcePrinterVisitor(
     print("\"")
     for (arg in arguments) {
       when {
-        arg is IrConst<*> && arg.kind == IrConstKind.String -> print(arg.value)
+        arg is IrConst && arg.kind == IrConstKind.String -> print(arg.value)
         arg is IrGetValue -> {
           print("$")
           arg.print()
@@ -744,7 +743,7 @@ class IrSourcePrinterVisitor(
   }
 
   override fun visitWhen(expression: IrWhen) {
-    val isIf = expression.origin == IrStatementOrigin.IF || expression is IrIfThenElseImpl
+    val isIf = expression.origin == IrStatementOrigin.IF
     when {
       expression.origin == IrStatementOrigin.OROR -> {
         val lhs = expression.branches[0].condition
@@ -762,11 +761,11 @@ class IrSourcePrinterVisitor(
       }
       isIf -> {
         val singleLine = expression.branches.all {
-          it.result is IrConst<*> || it.result is IrGetValue
+          it.result is IrConst || it.result is IrGetValue
         }
         expression.branches.forEachIndexed { index, branch ->
           val isElse = index == expression.branches.size - 1 &&
-            (branch.condition as? IrConst<*>)?.value == true
+            (branch.condition as? IrConst)?.value == true
           when {
             index == 0 -> {
               print("if (")
@@ -808,7 +807,7 @@ class IrSourcePrinterVisitor(
         print("when ")
         bracedBlock {
           expression.branches.forEach {
-            val isElse = (it.condition as? IrConst<*>)?.value == true
+            val isElse = (it.condition as? IrConst)?.value == true
 
             if (isElse) {
               print("else")
@@ -871,7 +870,8 @@ class IrSourcePrinterVisitor(
     val returnTarget = expression.returnTargetSymbol.owner
     if (returnTarget !is IrFunction ||
       (!returnTarget.isLambda && (useFir || !returnTarget.isDelegatedPropertySetter)) ||
-      !expression.isLastStatementIn(returnTarget)) {
+      !expression.isLastStatementIn(returnTarget)
+    ) {
       val suffix = returnTargetToCall[returnTarget.symbol]?.let {
         "@${it.symbol.owner.name}"
       } ?: ""
@@ -911,7 +911,8 @@ class IrSourcePrinterVisitor(
         val rhs = when (rhsStatement) {
           is IrBlock -> {
             if (rhsStatement.statements.size == 2) {
-              when (val target = rhsStatement.statements[1]) {
+              val target = rhsStatement.statements[1]
+              when (target) {
                 is IrVariable -> target.initializer
                 else -> target
               }
@@ -1113,7 +1114,7 @@ class IrSourcePrinterVisitor(
     return "0b$result" + if (value < 0) ".inv()" else ""
   }
 
-  override fun visitConst(expression: IrConst<*>) {
+  override fun visitConst(expression: IrConst) {
     val result = when (expression.kind) {
       is IrConstKind.Null -> "${expression.value}"
       is IrConstKind.Boolean -> "${expression.value}"
@@ -1278,6 +1279,10 @@ class IrSourcePrinterVisitor(
   override fun visitClassReference(expression: IrClassReference) {
     print(expression.classType.renderSrc())
     print("::class")
+  }
+
+  override fun visitFunctionAccess(expression: IrFunctionAccessExpression) {
+    super.visitFunctionAccess(expression)
   }
 
   override fun visitBranch(branch: IrBranch) {
@@ -1591,7 +1596,7 @@ class IrSourcePrinterVisitor(
     when (irElement) {
       null -> append("<null>")
       is IrConstructorCall -> renderAsAnnotation(irElement)
-      is IrConst<*> -> {
+      is IrConst -> {
         append('\'')
         append(irElement.value.toString())
         append('\'')
