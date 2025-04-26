@@ -10,7 +10,4 @@
 .gradle
 .kotlin
 build
-release
 local.properties
-google-services.json
-keystore

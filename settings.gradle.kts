@@ -1,10 +1,9 @@
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "KotlinCompilerPluginPlayground"
+rootProject.name = "AndroidxComposeCompilerPlugin"
 
 pluginManagement {
   repositories {
-    maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
     gradlePluginPortal()
     mavenCentral()
   }
@@ -12,8 +11,6 @@ pluginManagement {
 
 dependencyResolutionManagement {
   repositories {
-    maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
     mavenCentral()
   }
 }
-
